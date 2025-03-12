@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 # Configuration
 class Config:
     QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
+    QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "")
     COLLECTION_NAME = os.getenv("QDRANT_COLLECTION", "h&m-mini")
     EMBEDDING_MODEL = "clip-ViT-B-32"
     GROUP_ORDER = ["Menswear", "Ladieswear", "Divided", "Baby/Children", "Sport"]
@@ -40,7 +41,10 @@ class SearchResult(BaseModel):
 
 class QdrantService:
     def __init__(self):
-        self.client = QdrantClient(url=Config.QDRANT_URL)
+        self.client = QdrantClient(
+            url=Config.QDRANT_URL,
+            api_key=Config.QDRANT_API_KEY if Config.QDRANT_API_KEY else None
+        )
         self.encoder = SentenceTransformer(Config.EMBEDDING_MODEL)
 
     def create_filter(self, groups: List[str] = None, items: List[str] = None) -> dict:
