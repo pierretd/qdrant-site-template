@@ -1,7 +1,6 @@
 try:
     from fastapi import FastAPI, HTTPException, Query
     from fastapi.middleware.cors import CORSMiddleware
-    from fastapi.staticfiles import StaticFiles
     from qdrant_client import QdrantClient
     from sentence_transformers import SentenceTransformer
     from typing import List
@@ -151,9 +150,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/search", response_model=List[SearchResult])
 async def search_fashion_items(
