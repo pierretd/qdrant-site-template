@@ -168,4 +168,4 @@ async def get_groups():
 # Add a root endpoint for health check
 @app.get("/")
 async def root():
-    return {"status": "ok", "message": "H&M Fashion Search API is running"}
+    return {"status": "ok", "message": "H&M Fashion Search API is running"} 
