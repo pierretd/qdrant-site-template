@@ -1,9 +1,24 @@
 services:
-  # A Docker web service
+  # Frontend Next.js service
   - type: web
-    name: fastapi-example
-    runtime: python
-    plan: free
-    autoDeploy: false
+    name: qdrant-site-template-frontend
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+  # Backend FastAPI service
+  - type: web
+    name: qdrant-site-template-api
+    env: python
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.18
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_COLLECTION
+        sync: false 
