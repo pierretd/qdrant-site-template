@@ -1,2 +1,4 @@
 fastapi[all]
-uvicorn`
+uvicorn
+qdrant-client   
+fastembed
