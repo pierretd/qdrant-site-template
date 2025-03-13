@@ -336,7 +336,7 @@ export default function Home() {
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <p className="text-gray-600 dark:text-gray-300 mb-2">No results found for "{query}"</p>
+                  <p className="text-gray-600 dark:text-gray-300 mb-2">No results found for &quot;{query}&quot;</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Try a different search term or adjust your filters</p>
                 </div>
               )}

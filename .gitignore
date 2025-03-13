@@ -4,6 +4,10 @@
 /node_modules
 /.pnp
 .pnp.js
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
 
 # testing
 /coverage
@@ -11,6 +15,8 @@
 # next.js
 /.next/
 /out/
+.next/server/vendor-chunks/
+.next/cache/
 
 # production
 /build
@@ -18,14 +24,23 @@
 # misc
 .DS_Store
 *.pem
+.idea/
+.vscode/
+*.swp
+*.swo
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.pnpm-debug.log*
 
 # local env files
+.env
 .env*.local
+.env.development
+.env.test
+.env.production
 
 # vercel
 .vercel
@@ -36,4 +51,16 @@ next-env.d.ts
 
 # python
 __pycache__/
-venv
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+.env/
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+.python-version

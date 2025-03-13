@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { MagnifyingGlassIcon, AdjustmentsHorizontalIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { Input } from "@/components/ui/input";
@@ -45,27 +45,74 @@ export default function FashionSearch() {
   const [sortBy, setSortBy] = useState('relevance');
   const router = useRouter();
 
-  useEffect(() => {
-    // Check API health on component mount
-    checkApiHealth();
-    loadGroups();
-    searchFashion();
-  }, []);
+  const fetchResults = useCallback(async () => {
+    if (useMockData) {
+      const mockResults = generateMockResults();
+      setResults(mockResults);
+      return;
+    }
 
-  const checkApiHealth = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (query) params.append('query', query);
+      if (selectedGroups.size > 0) {
+        selectedGroups.forEach(group => params.append('group', group));
+      }
+      if (selectedItems.size > 0) {
+        selectedItems.forEach(item => params.append('item', item));
+      }
+      params.append('offset', currentOffset.toString());
+      params.append('limit', '20');
+      params.append('sort', sortBy);
+
+      const response = await fetch(`${API_BASE_URL}/api/py/search?${params.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (currentOffset === 0) {
+        setResults(data.results);
+      } else {
+        setResults(prev => [...prev, ...data.results]);
+      }
+      
+      setHasMore(data.results.length === 20);
+    } catch (error) {
+      console.error('Search error:', error);
+      setApiError('Failed to fetch search results');
+    }
+  }, [API_BASE_URL, currentOffset, query, selectedGroups, selectedItems, sortBy, useMockData]);
+
+  const searchFashion = useCallback(async () => {
+    setCurrentOffset(0);
+    setHasMore(true);
+    setIsLoading(true);
+    setResults([]);
+    setApiError(null);
+    
+    try {
+      await fetchResults();
+    } finally {
+      setIsLoading(false);
+    }
+  }, [fetchResults]);
+
+  const checkApiHealth = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/py/`);
       if (response.ok) {
         const data = await response.json();
         setApiInfo(data);
-        console.log('API health check:', data);
       }
     } catch (error) {
       console.error('API health check failed:', error);
     }
-  };
+  }, [API_BASE_URL]);
 
-  const loadGroups = async () => {
+  const loadGroups = useCallback(async () => {
     try {
       console.log('Fetching groups from API...');
       const response = await fetch(`${API_BASE_URL}/api/py/groups`);
@@ -84,7 +131,14 @@ export default function FashionSearch() {
       setGroups(['Menswear', 'Ladieswear', 'Divided', 'Baby/Children', 'Sport']);
       setApiError('Failed to load groups. Using default values.');
     }
-  };
+  }, [API_BASE_URL]);
+
+  useEffect(() => {
+    // Check API health on component mount
+    checkApiHealth();
+    loadGroups();
+    searchFashion();
+  }, [searchFashion, checkApiHealth, loadGroups]);
 
   const handleGroupChange = (group: string) => {
     const newGroups = new Set(selectedGroups);
@@ -124,82 +178,9 @@ export default function FashionSearch() {
     router.push('/debug');
   };
 
-  const searchFashion = async () => {
-    setCurrentOffset(0);
-    setHasMore(true);
-    setIsLoading(true);
-    setResults([]);
-    setApiError(null);
-    
-    try {
-      await fetchResults();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchResults = async () => {
-    // If mock data is enabled, use that instead of API
-    if (useMockData) {
-      console.log('Using mock data instead of API');
-      const mockResults = generateMockResults();
-      setResults(mockResults);
-      setHasMore(false);
-      return;
-    }
-
-    try {
-      const searchParams = new URLSearchParams();
-      if (query) searchParams.append('query', query);
-      selectedGroups.forEach(group => {
-        searchParams.append('group', group);
-      });
-      selectedItems.forEach(item => {
-        searchParams.append('item', item);
-      });
-      searchParams.append('limit', '20');
-      searchParams.append('offset', currentOffset.toString());
-      
-      const apiUrl = `${API_BASE_URL}/api/py/search?${searchParams}`;
-      console.log(`Fetching from: ${apiUrl}`);
-      console.log('API base URL:', API_BASE_URL);
-      console.log('Environment:', process.env.NODE_ENV);
-      
-      const response = await fetch(apiUrl);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Search failed with status:', response.status, errorText);
-        console.error('Response headers:', Object.fromEntries([...response.headers.entries()]));
-        throw new Error(`Search failed: ${response.status} ${response.statusText} - ${errorText}`);
-      }
-      
-      const data = await response.json();
-      console.log('Search results:', data);
-      
-      if (!Array.isArray(data)) {
-        console.error('API returned non-array data:', data);
-        throw new Error('API returned invalid data format');
-      }
-      
-      if (currentOffset === 0) {
-        setResults(data);
-      } else {
-        setResults(prev => [...prev, ...data]);
-      }
-      
-      setHasMore(data.length === 20);
-      setCurrentOffset(prev => prev + data.length);
-    } catch (error) {
-      console.error('Error fetching results:', error);
-      setApiError(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      
-      // Only use mock data if this is the initial load and we have no results yet
-      if (currentOffset === 0 && results.length === 0) {
-        console.log('Falling back to mock data');
-        const mockResults = generateMockResults();
-        setResults(mockResults);
-      }
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      searchFashion();
     }
   };
 
@@ -216,12 +197,6 @@ export default function FashionSearch() {
       size: ['S', 'M', 'L', 'XL'][i % 4],
       article_id: `MOCK-${100000 + i}`
     }));
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      searchFashion();
-    }
   };
 
   const renderFilters = () => (
@@ -494,13 +469,13 @@ export default function FashionSearch() {
               </>
             ) : query ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <p className="text-gray-600 dark:text-gray-300 mb-2">No results found for "{query}"</p>
+                <p className="text-gray-600 dark:text-gray-300 mb-2">No results found for &quot;{query}&quot;</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Try a different search term or adjust your filters</p>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <p className="text-gray-600 dark:text-gray-300 mb-2">Enter a search term to find fashion items</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Try searching for categories like "dress", "jeans", or "shirt"</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Try searching for categories like &quot;dress&quot;, &quot;jeans&quot;, or &quot;shirt&quot;</p>
               </div>
             )}
           </div>

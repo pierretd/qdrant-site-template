@@ -1,33 +1,37 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import Link from 'next/link';
 
 export default function DebugPage() {
   const [apiInfo, setApiInfo] = useState<{status: string, qdrant_url?: string, collection?: string} | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
   
   // API base URL from environment variables
   const API_BASE_URL = process.env.NODE_ENV === 'production'
     ? process.env.NEXT_PUBLIC_API_URL_PROD || ''
     : process.env.NEXT_PUBLIC_API_URL_DEV || '';
 
-  useEffect(() => {
-    // Check API health on component mount
-    checkApiHealth();
-  }, []);
-
-  const checkApiHealth = async () => {
+  const checkApiHealth = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/py/`);
       if (response.ok) {
         const data = await response.json();
         setApiInfo(data);
         console.log('API health check:', data);
+      } else {
+        setApiError('API returned an error');
       }
     } catch (error) {
-      console.error('API health check failed:', error);
+      console.error('API health check error:', error);
+      setApiError('Failed to connect to API');
     }
-  };
+  }, [API_BASE_URL]);
+
+  useEffect(() => {
+    // Check API health on component mount
+    checkApiHealth();
+  }, [checkApiHealth]);
 
   return (
     <div className="container py-8">
