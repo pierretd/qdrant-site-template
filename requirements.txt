@@ -1,6 +1,7 @@
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-qdrant-client==1.7.3
-sentence-transformers==2.5.1
-python-multipart==0.0.9
-aiofiles==23.2.1
+fastapi
+uvicorn
+qdrant-client
+fastembed==0.6.0
+python-dotenv
+pydantic
+sentence-transformers
